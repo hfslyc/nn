@@ -137,7 +137,7 @@ void THNN_(SpatialNLLCriterionWithMask_updateGradInput)(
   }
 
   THIndexTensor_(free)(target);
-  THTensor_free(valid_mask);
+  THTensor_(free)(valid_mask);
   if (weights)
     THTensor_(free)(weights);
 }
