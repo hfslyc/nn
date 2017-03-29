@@ -203,6 +203,9 @@
 #include "generic/SpatialAdaptiveMaxPooling.c"
 #include "THGenerateFloatTypes.h"
 
+#include "generic/SpatialAdaptiveAveragePooling.c"
+#include "THGenerateFloatTypes.h"
+
 #include "generic/SpatialAveragePooling.c"
 #include "THGenerateFloatTypes.h"
 
@@ -246,6 +249,9 @@
 #include "THGenerateFloatTypes.h"
 
 #include "generic/VolumetricDilatedMaxPooling.c"
+#include "THGenerateFloatTypes.h"
+
+#include "generic/VolumetricFractionalMaxPooling.c"
 #include "THGenerateFloatTypes.h"
 
 #include "generic/VolumetricMaxUnpooling.c"

@@ -21,6 +21,7 @@ A convolution is an integral that expresses the amount of overlap of one functio
     * [SpatialFractionalMaxPooling](#nn.SpatialFractionalMaxPooling) : a 2D fractional max-pooling operation over an input image ;
     * [SpatialAveragePooling](#nn.SpatialAveragePooling) : a 2D average-pooling operation over an input image ;
     * [SpatialAdaptiveMaxPooling](#nn.SpatialAdaptiveMaxPooling) : a 2D max-pooling operation which adapts its parameters dynamically such that the output is of fixed size ;
+    * [SpatialAdaptiveAveragePooling](#nn.SpatialAdaptiveAveragePooling) : a 2D average-pooling operation which adapts its parameters dynamically such that the output is of fixed size ;
     * [SpatialMaxUnpooling](#nn.SpatialMaxUnpooling) : a 2D max-unpooling operation ;
     * [SpatialLPPooling](#nn.SpatialLPPooling) : computes the `p` norm in a convolutional manner on a set of input images ;
     * [SpatialConvolutionMap](#nn.SpatialConvolutionMap) : a 2D convolution that uses a generic connection table ;
@@ -31,14 +32,15 @@ A convolution is an integral that expresses the amount of overlap of one functio
     * [SpatialCrossMapLRN](#nn.SpatialCrossMapLRN) : a spatial local response normalization between feature maps ;
     * [SpatialBatchNormalization](#nn.SpatialBatchNormalization): mean/std normalization over the mini-batch inputs and pixels, with an optional affine transform that follows
 a kernel for computing the weighted average in a neighborhood ;
-    * [SpatialUpsamplingNearest](#nn.SpatialUpSamplingNearest): A simple nearest neighbor upsampler applied to every channel of the feature map.
-    * [SpatialUpsamplingBilinear](#nn.SpatialUpSamplingNearest): A simple bilinear upsampler applied to every channel of the feature map.
+    * [SpatialUpSamplingNearest](#nn.SpatialUpSamplingNearest): A simple nearest neighbor upsampler applied to every channel of the feature map.
+    * [SpatialUpSamplingBilinear](#nn.SpatialUpSamplingBilinear): A simple bilinear upsampler applied to every channel of the feature map.
   * [Volumetric Modules](#nn.VolumetricModules) apply to inputs with three-dimensional relationships (e.g. videos) :
     * [VolumetricConvolution](#nn.VolumetricConvolution) : a 3D convolution over an input video (a sequence of images) ;
     * [VolumetricFullConvolution](#nn.VolumetricFullConvolution) : a 3D full convolution over an input video (a sequence of images) ;
     * [VolumetricDilatedConvolution](#nn.VolumetricDilatedConvolution) : a 3D dilated convolution over an input image ;
     * [VolumetricMaxPooling](#nn.VolumetricMaxPooling) : a 3D max-pooling operation over an input video.
     * [VolumetricDilatedMaxPooling](#nn.VolumetricDilatedMaxPooling) : a 3D dilated max-pooling operation over an input video ;
+    * [VolumetricFractionalMaxPooling](#nn.VolumetricFractionalMaxPooling) : a 3D fractional max-pooling operation over an input image ;
     * [VolumetricAveragePooling](#nn.VolumetricAveragePooling) : a 3D average-pooling operation over an input video.
     * [VolumetricMaxUnpooling](#nn.VolumetricMaxUnpooling) : a 3D max-unpooling operation.
     * [VolumetricReplicationPadding](#nn.VolumetricReplicationPadding) : Pads a volumetric feature map with the value at the edge of the input borders. ;
@@ -538,8 +540,8 @@ The parameters are the following:
 If the input image is a 3D tensor `nInputPlane x height x width`, the output image size
 will be `nOutputPlane x oheight x owidth` where
 ```lua
-owidth  = floor(width + 2 * padW - dilationW * (kW-1) - 1) / dW + 1
-oheight = floor(height + 2 * padH - dilationH * (kH-1) - 1) / dH + 1
+owidth  = floor((width + 2 * padW - dilationW * (kW-1) - 1) / dW) + 1
+oheight = floor((height + 2 * padH - dilationH * (kH-1) - 1) / dH) + 1
 ```
 
 Further information about the dilated convolution can be found in the following paper: [Multi-Scale Context Aggregation by Dilated Convolutions](http://arxiv.org/abs/1511.07122).
@@ -721,6 +723,19 @@ x_j_end   = ceil(((j+1)/owidth)  * iwidth)
 y_i_start = floor((i   /oheight) * iheight)
 y_i_end   = ceil(((i+1)/oheight) * iheight)
 ```
+
+<a name="nn.SpatialAdaptiveAveragePooling"></a>
+### SpatialAdaptiveAveragePooling ###
+
+```lua
+module = nn.SpatialAdaptiveAveragePooling(W, H)
+```
+
+Applies 2D average-pooling operation in an image such that the output is of
+size `WxH`, for any input size. The number of output features is equal
+to the number of input planes.
+
+The pooling region algorithm is the same as that in [SpatialAdaptiveMaxPooling](#nn.SpatialAdaptiveMaxPooling).
 
 <a name="nn.SpatialMaxUnpooling"></a>
 ### SpatialMaxUnpooling ###
@@ -940,7 +955,7 @@ The learning of gamma and beta is optional.
 
    In training time, this layer keeps a running estimate of it's computed mean and std.
    The running sum is kept with a default momentup of 0.1 (unless over-ridden)
-   In test time, this running mean/std is used to normalize.
+   In test time, this running mean/std is used to normalize. (**Note that the running mean/std will not be saved if one only checkpoints a model's parameters. In order to correctly use the calculated running mean/std, one needs to checkpoint the model itself (call [clearState()](https://github.com/torch/nn/blob/master/doc/module.md#clearstate) first to save space).**)
 
 
 
@@ -1070,9 +1085,9 @@ The parameters are the following:
 If the input image is a 4D tensor `nInputPlane x depth x height x width`, the output image size
 will be `nOutputPlane x odepth x oheight x owidth` where
 ```lua
-odepth  = floor(depth + 2 * padT - dilationT * (kT-1) + 1) / dT + 1
-owidth  = floor(width + 2 * padW - dilationW * (kW-1) + 1) / dW + 1
-oheight = floor(height + 2 * padH - dilationH * (kH-1) + 1) / dH + 1
+odepth  = floor((depth + 2 * padT - dilationT * (kT-1) + 1) / dT) + 1
+owidth  = floor((width + 2 * padW - dilationW * (kW-1) + 1) / dW) + 1
+oheight = floor((height + 2 * padH - dilationH * (kH-1) + 1) / dH) + 1
 ```
 
 Further information about the dilated convolution can be found in the following paper: [Multi-Scale Context Aggregation by Dilated Convolutions](http://arxiv.org/abs/1511.07122).
@@ -1111,6 +1126,46 @@ oheight = op((height - (dilationH * (kH - 1) + 1) + 2*padH) / dH + 1)
 
 `op` is a rounding operator. By default, it is `floor`. It can be changed
 by calling `:ceil()` or `:floor()` methods.
+
+<a name="nn.VolumetricFractionalMaxPooling"></a>
+### VolumetricFractionalMaxPooling ###
+
+```lua
+module = nn.VolumetricFractionalMaxPooling(kT, kW, kH, outT, outW, outH)
+--   the output should be the exact size (outH x outW x outT)
+OR
+module = nn.VolumetricFractionalMaxPooling(kT, kW, kH, ratioT, ratioW, ratioH)
+--   the output should be the size (floor(inH x ratioH) x floor(inW x ratioW) x floor(inT x ratioT))
+--   ratios are numbers between (0, 1) exclusive
+```
+
+Applies 3D Fractional max-pooling operation in the "pseudorandom" mode, analogous to [SpatialFractionalMaxPooling](#nn.SpatialFractionalMaxPooling).
+
+The max-pooling operation is applied in `kTxkWxkH` regions by a stochastic step size determined by the target output size.
+The number of output features is equal to the number of input planes.
+
+There are two constructors available.
+
+Constructor 1:
+```lua
+module = nn.VolumetricFractionalMaxPooling(kT, kW, kH, outT, outW, outH)
+```
+
+Constructor 2:
+```lua
+module = nn.VolumetricFractionalMaxPooling(kT, kW, kH, ratioT, ratioW, ratioH)
+```
+If the input image is a 4D tensor `nInputPlane x height x width x time`, the output
+image size will be `nOutputPlane x oheight x owidth x otime`
+
+ where
+
+```lua
+otime  = floor(time * ratioT)
+owidth  = floor(width * ratioW)
+oheight = floor(height * ratioH)
+```
+ratios are numbers between (0, 1) exclusive
 
 <a name="nn.VolumetricAveragePooling"></a>
 ### VolumetricAveragePooling ###
